@@ -467,7 +467,8 @@ class Autoresponder {
     }
     final user =
         'Название вакансии: ${v.name}\nКомпания: ${v.companyName}\nОписание вакансии:\n$description';
-    return ai.chat(system, user, maxTokens: 800, temperature: 0.8);
+    // Запас по токенам, чтобы reasoning-моделям хватило и на «размышления», и на ответ.
+    return ai.chat(system, user, maxTokens: 1500, temperature: 0.8);
   }
 
   // --- helpers ---

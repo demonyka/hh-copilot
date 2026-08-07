@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Клиент к OpenAI-совместимому API (пользователь задаёт свой сервер и модель:
@@ -61,19 +62,69 @@ class AiClient {
       throw Exception('AI ${resp.statusCode}: ${_short(resp.body)}');
     }
     final data = jsonDecode(utf8.decode(resp.bodyBytes));
-    final choices = data is Map ? data['choices'] : null;
-    if (choices is List && choices.isNotEmpty) {
-      final msg = choices.first is Map ? choices.first['message'] : null;
-      final content = msg is Map ? msg['content'] : null;
-      if (content != null) return content.toString().trim();
+    if (kDebugMode) {
+      debugPrint('[hh-copilot] AI resp: ${_short(resp.body, 500)}');
     }
-    throw Exception('AI: пустой ответ');
+    if (data is Map && data['error'] != null) {
+      throw Exception('AI: ${data['error']}');
+    }
+    final choices = data is Map ? data['choices'] : null;
+    if (choices is List && choices.isNotEmpty && choices.first is Map) {
+      final choice = choices.first as Map;
+      final text = _contentOf(choice).trim();
+      if (text.isNotEmpty) return text;
+
+      // Пустой content: чаще всего reasoning-модель израсходовала лимит токенов
+      // на «размышления», не оставив ответа.
+      final fr = (choice['finish_reason'] ?? choice['native_finish_reason'] ?? '')
+          .toString();
+      final msg = choice['message'];
+      final hasReasoning =
+          msg is Map && (msg['reasoning_content'] ?? msg['reasoning']) != null;
+      final hint = hasReasoning || fr == 'length'
+          ? 'Модель ответила пусто (finish_reason=$fr): похоже, это reasoning-модель '
+              'или не хватило max_tokens. Возьмите обычную chat-модель '
+              '(например gpt-4o-mini, deepseek-chat, llama3), не «reasoner/o1/R1».'
+          : 'Модель вернула пустой ответ (finish_reason=$fr).';
+      throw Exception(hint);
+    }
+    throw Exception('AI: неожиданный ответ (${_short(resp.body, 200)})');
+  }
+
+  /// Извлекает текст ответа из choice: content как строка, как массив частей,
+  /// либо legacy-поле text.
+  static String _contentOf(Map choice) {
+    final msg = choice['message'];
+    if (msg is Map) {
+      final c = msg['content'];
+      if (c is String) return c;
+      if (c is List) {
+        final sb = StringBuffer();
+        for (final p in c) {
+          if (p is String) {
+            sb.write(p);
+          } else if (p is Map && p['text'] != null) {
+            sb.write(p['text']);
+          }
+        }
+        return sb.toString();
+      }
+    }
+    final t = choice['text'];
+    return t is String ? t : '';
   }
 
   /// Быстрая проверка соединения/ключа.
   Future<void> ping() async {
-    await chat('Ты ассистент.', 'Ответь одним словом: ок.',
-        maxTokens: 5, temperature: 0);
+    final answer = await chat(
+      'Ты ассистент. Отвечай кратко.',
+      'Напиши слово: ок',
+      maxTokens: 64,
+      temperature: 0,
+    );
+    if (answer.trim().isEmpty) {
+      throw Exception('Модель вернула пустой ответ');
+    }
   }
 
   /// Решает тестовые задания вакансии. Возвращает ответ по каждому task_id.
@@ -209,8 +260,8 @@ class AiClient {
     return 0;
   }
 
-  static String _short(String s) =>
-      s.length > 200 ? '${s.substring(0, 200)}…' : s;
+  static String _short(String s, [int n = 200]) =>
+      s.length > n ? '${s.substring(0, n)}…' : s;
 }
 
 /// Вердикт классификации сообщения работодателя.
