@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза (например v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+      - run: flutter pub get
+
+      - name: Build macOS
+        if: matrix.platform == 'macos'
+        run: |
+          flutter build macos --release
+          ditto -c -k --keepParent \
+            build/macos/Build/Products/Release/hh_copilot.app \
+            "$GITHUB_WORKSPACE/hh_copilot-${{ env.RELEASE_TAG }}-macos.zip"
+
+      - name: Build Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          flutter build windows --release
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath "$env:GITHUB_WORKSPACE/hh_copilot-${{ env.RELEASE_TAG }}-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: hh_copilot-*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: List artifacts
+        run: find dist -type f
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: hh·copilot ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          fail_on_unmatched_files: false
+          files: dist/**/*.zip
+          body: |
+            Первый релиз **hh·copilot** — десктоп-приложение для hh.ru: аналитика
+            резюме, чаты, авто-отклики с ИИ (письма/тесты), авто-ответы
+            работодателям, определение собеседований и уведомления в Telegram.
+
+            ### Скачать
+            - **macOS** — `hh_copilot-*-macos.zip` (universal: Intel + Apple Silicon).
+              Подпись ad-hoc: при первом запуске правый клик → «Открыть», либо
+              `xattr -dr com.apple.quarantine hh_copilot.app`.
+            - **Windows** — `hh_copilot-*-windows.zip` (нужен WebView2 Runtime; на
+              Windows 11 предустановлен).
+
+            Установка: распакуйте и запустите. Настройка ИИ/Telegram — внутри
+            приложения. Подробнее — в README.
