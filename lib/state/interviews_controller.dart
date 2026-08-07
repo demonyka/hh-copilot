@@ -150,6 +150,7 @@ class InterviewsController extends ChangeNotifier {
       baseUrl: cfg.aiBaseUrl,
       model: cfg.aiModel,
       apiKey: cfg.aiApiKey,
+      reasoningEffort: cfg.aiReasoningEffort,
     );
   }
 

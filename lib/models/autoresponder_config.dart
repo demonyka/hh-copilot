@@ -51,6 +51,7 @@ class AutoresponderConfig {
     this.aiBaseUrl = 'http://localhost:11434',
     this.aiModel = '',
     this.aiApiKey = '',
+    this.aiReasoningEffort = 'none',
     this.letterPrompt = kDefaultLetterPrompt,
     this.chatPrompt = kDefaultChatPrompt,
     this.contacts = '',
@@ -99,6 +100,10 @@ class AutoresponderConfig {
   final String aiModel;
   final String aiApiKey;
 
+  /// reasoning_effort для reasoning-моделей: '' (не отправлять), 'none'
+  /// (отключить), 'low', 'medium', 'high'. Отправляется в запрос, если непусто.
+  final String aiReasoningEffort;
+
   /// Системный промпт письма (с плейсхолдерами).
   final String letterPrompt;
 
@@ -125,6 +130,7 @@ class AutoresponderConfig {
     String? aiBaseUrl,
     String? aiModel,
     String? aiApiKey,
+    String? aiReasoningEffort,
     String? letterPrompt,
     String? chatPrompt,
     String? contacts,
@@ -146,6 +152,7 @@ class AutoresponderConfig {
       aiBaseUrl: aiBaseUrl ?? this.aiBaseUrl,
       aiModel: aiModel ?? this.aiModel,
       aiApiKey: aiApiKey ?? this.aiApiKey,
+      aiReasoningEffort: aiReasoningEffort ?? this.aiReasoningEffort,
       letterPrompt: letterPrompt ?? this.letterPrompt,
       chatPrompt: chatPrompt ?? this.chatPrompt,
       contacts: contacts ?? this.contacts,
@@ -168,6 +175,7 @@ class AutoresponderConfig {
         'aiBaseUrl': aiBaseUrl,
         'aiModel': aiModel,
         'aiApiKey': aiApiKey,
+        'aiReasoningEffort': aiReasoningEffort,
         'letterPrompt': letterPrompt,
         'chatPrompt': chatPrompt,
         'contacts': contacts,
@@ -192,6 +200,8 @@ class AutoresponderConfig {
       aiBaseUrl: (j['aiBaseUrl'] ?? d.aiBaseUrl) as String,
       aiModel: (j['aiModel'] ?? d.aiModel) as String,
       aiApiKey: (j['aiApiKey'] ?? d.aiApiKey) as String,
+      aiReasoningEffort:
+          (j['aiReasoningEffort'] ?? d.aiReasoningEffort) as String,
       letterPrompt: (j['letterPrompt'] ?? d.letterPrompt) as String,
       chatPrompt: (j['chatPrompt'] ?? d.chatPrompt) as String,
       contacts: (j['contacts'] ?? d.contacts) as String,

@@ -329,6 +329,7 @@ class AutoresponderController extends ChangeNotifier {
         baseUrl: _config.aiBaseUrl,
         model: _config.aiModel,
         apiKey: _config.aiApiKey,
+        reasoningEffort: _config.aiReasoningEffort,
       );
 
   void _appendLog(List<AutoLogEntry> log, String m, bool error) {

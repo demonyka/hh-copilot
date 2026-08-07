@@ -10,12 +10,18 @@ class AiClient {
     required String baseUrl,
     required this.model,
     required this.apiKey,
+    this.reasoningEffort = '',
     this.timeout = const Duration(seconds: 120),
   }) : baseUrl = _normalizeBaseUrl(baseUrl);
 
   final String baseUrl;
   final String model;
   final String apiKey;
+
+  /// reasoning_effort для reasoning-моделей ('none'/'low'/'medium'/'high').
+  /// Если пусто — параметр не отправляется.
+  final String reasoningEffort;
+
   final Duration timeout;
 
   static String _normalizeBaseUrl(String url) {
@@ -54,6 +60,8 @@ class AiClient {
             'stream': false,
             'max_tokens': maxTokens,
             'temperature': temperature,
+            if (reasoningEffort.trim().isNotEmpty)
+              'reasoning_effort': reasoningEffort.trim(),
           }),
         )
         .timeout(timeout);

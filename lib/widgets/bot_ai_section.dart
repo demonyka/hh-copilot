@@ -41,7 +41,7 @@ class _BotAiSectionState extends State<BotAiSection> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<AutoresponderController>();
+    final controller = context.watch<AutoresponderController>();
     void update() => controller.updateConfig(controller.config.copyWith(
           aiBaseUrl: _base.text,
           aiModel: _model.text,
@@ -84,6 +84,40 @@ class _BotAiSectionState extends State<BotAiSection> {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            SizedBox(
+              width: 320,
+              child: DropdownButtonFormField<String>(
+                initialValue: _effortValues.contains(controller.config.aiReasoningEffort)
+                    ? controller.config.aiReasoningEffort
+                    : '',
+                isExpanded: true,
+                decoration: botInputDecoration('Reasoning (для reasoning-моделей)', null),
+                items: const [
+                  DropdownMenuItem(value: '', child: Text('Не отправлять')),
+                  DropdownMenuItem(value: 'none', child: Text('Отключить (none)')),
+                  DropdownMenuItem(value: 'low', child: Text('Низкий (low)')),
+                  DropdownMenuItem(value: 'medium', child: Text('Средний (medium)')),
+                  DropdownMenuItem(value: 'high', child: Text('Высокий (high)')),
+                ],
+                onChanged: widget.enabled
+                    ? (v) => controller.updateConfig(
+                        controller.config.copyWith(aiReasoningEffort: v ?? ''))
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Text(
+                'Если модель «думает» и возвращает пустой ответ — поставьте «Отключить (none)» '
+                'или «Низкий». Обычным chat-моделям обычно нужно «Не отправлять».',
+                style: TextStyle(fontSize: 12, color: HhColors.textMuted),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         Align(
           alignment: Alignment.centerLeft,
@@ -97,14 +131,20 @@ class _BotAiSectionState extends State<BotAiSection> {
     );
   }
 
+  static const _effortValues = ['', 'none', 'low', 'medium', 'high'];
+
   Future<void> _ping() async {
     final messenger = ScaffoldMessenger.of(context);
+    final effort = context.read<AutoresponderController>().config.aiReasoningEffort;
     messenger.showSnackBar(
         const SnackBar(content: Text('Проверяю подключение к ИИ…')));
     try {
       await AiClient(
-              baseUrl: _base.text, model: _model.text, apiKey: _key.text)
-          .ping();
+        baseUrl: _base.text,
+        model: _model.text,
+        apiKey: _key.text,
+        reasoningEffort: effort,
+      ).ping();
       messenger.showSnackBar(const SnackBar(
           backgroundColor: HhColors.green,
           content: Text('ИИ отвечает — всё в порядке')));
