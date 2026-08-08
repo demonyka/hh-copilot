@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../theme/hh_theme.dart';
 
-/// Категория состояния отклика (по `lastState` из hh.ru).
-enum NegotiationCategory { invitation, interview, offer, rejection, pending }
+/// Категория отклика по МЕТКЕ hh.ru (`lastState`).
+///
+/// ВНИМАНИЕ: «Приглашения» здесь — это метка hh.ru (работодатель нажал
+/// «Пригласить»/назначил статус). Это НЕ то же, что раздел «Собеседования» —
+/// там мы сами определяем реальные приглашения через ИИ по тексту сообщений.
+enum NegotiationCategory { invitation, rejection, pending }
 
 extension NegotiationCategoryX on NegotiationCategory {
   String get label {
     switch (this) {
       case NegotiationCategory.invitation:
         return 'Приглашения';
-      case NegotiationCategory.interview:
-        return 'Собеседования';
-      case NegotiationCategory.offer:
-        return 'Офферы';
       case NegotiationCategory.rejection:
         return 'Отказы';
       case NegotiationCategory.pending:
@@ -25,10 +25,6 @@ extension NegotiationCategoryX on NegotiationCategory {
     switch (this) {
       case NegotiationCategory.invitation:
         return HhColors.green;
-      case NegotiationCategory.interview:
-        return HhColors.blue;
-      case NegotiationCategory.offer:
-        return const Color(0xFF7A5CFA);
       case NegotiationCategory.rejection:
         return HhColors.red;
       case NegotiationCategory.pending:
@@ -36,22 +32,22 @@ extension NegotiationCategoryX on NegotiationCategory {
     }
   }
 
-  /// Считается ли исход положительным (для конверсии).
-  bool get isPositive =>
-      this == NegotiationCategory.invitation ||
-      this == NegotiationCategory.interview ||
-      this == NegotiationCategory.offer;
+  /// Положительный исход (для конверсии).
+  bool get isPositive => this == NegotiationCategory.invitation;
 }
 
-/// Категоризация состояния hh.ru (`lastState`) в укрупнённую группу.
+/// Категоризация метки hh.ru (`lastState`). Всё, что hh отметил как
+/// приглашение/интервью/оффер/приём, считаем «Приглашением» (метка hh).
 NegotiationCategory categorizeState(String state) {
   final s = state.toUpperCase();
   if (s.startsWith('DISCARD')) return NegotiationCategory.rejection;
-  if (s.contains('INTERVIEW') || s == 'ASSESSMENT') {
-    return NegotiationCategory.interview;
+  if (s == 'INVITATION' ||
+      s.contains('INTERVIEW') ||
+      s == 'ASSESSMENT' ||
+      s == 'OFFER' ||
+      s == 'HIRED') {
+    return NegotiationCategory.invitation;
   }
-  if (s == 'INVITATION') return NegotiationCategory.invitation;
-  if (s == 'OFFER' || s == 'HIRED') return NegotiationCategory.offer;
   // RESPONSE, CONSIDERATION, RESUME_VIEWED и прочее — ждём ответа.
   return NegotiationCategory.pending;
 }

@@ -188,11 +188,8 @@ class _KpiRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responses = analytics.responsesIn(period);
-    final invitations = analytics.categoryCount(
-            period, NegotiationCategory.invitation) +
-        analytics.categoryCount(period, NegotiationCategory.offer);
-    final interviews =
-        analytics.categoryCount(period, NegotiationCategory.interview);
+    final invitations =
+        analytics.categoryCount(period, NegotiationCategory.invitation);
     final rejections =
         analytics.categoryCount(period, NegotiationCategory.rejection);
 
@@ -209,12 +206,7 @@ class _KpiRow extends StatelessWidget {
         value: '$invitations',
         icon: Icons.check_circle_outline,
         color: HhColors.green,
-      ),
-      _KpiCard(
-        label: 'Собеседования',
-        value: '$interviews',
-        icon: Icons.groups_outlined,
-        color: HhColors.blue,
+        hint: 'метка hh',
       ),
       _KpiCard(
         label: 'Отказы',
@@ -226,7 +218,8 @@ class _KpiRow extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth > 720 ? 4 : 2;
+        final columns =
+            constraints.maxWidth > 720 ? cards.length : 2;
         final spacing = 16.0;
         final itemWidth =
             (constraints.maxWidth - spacing * (columns - 1)) / columns;

@@ -371,7 +371,7 @@ class AppState extends ChangeNotifier {
       try {
         final result = await controller.callAsyncJavaScript(
           functionBody: '''
-            const resp = await fetch(url, { credentials: 'include', redirect: 'follow' });
+            const resp = await fetch(url, { credentials: 'include', redirect: 'follow', cache: 'no-store' });
             return await resp.text();
           ''',
           arguments: {'url': url},
@@ -427,7 +427,7 @@ class AppState extends ChangeNotifier {
     try {
       final result = await controller.callAsyncJavaScript(
         functionBody: '''
-          const opts = { method: method, credentials: 'include', redirect: 'follow', headers: headers || {} };
+          const opts = { method: method, credentials: 'include', redirect: 'follow', cache: 'no-store', headers: headers || {} };
           if (body !== null && body !== undefined) opts.body = body;
           const resp = await fetch(url, opts);
           const text = await resp.text();

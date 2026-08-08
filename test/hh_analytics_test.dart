@@ -44,7 +44,8 @@ void main() {
       expect(items, hasLength(3));
       expect(items[0].state, 'DISCARD');
       expect(items[0].category, NegotiationCategory.rejection);
-      expect(items[1].category, NegotiationCategory.interview);
+      // INTERVIEW — это метка hh, относим к «Приглашениям».
+      expect(items[1].category, NegotiationCategory.invitation);
       // третий без lastState — берём initialState
       expect(items[2].state, 'RESPONSE');
       expect(items[2].category, NegotiationCategory.pending);
@@ -80,7 +81,7 @@ void main() {
     test('распределяет по категориям', () {
       final counts = build().categoryCounts(AnalyticsPeriod.all);
       expect(counts[NegotiationCategory.rejection], 1);
-      expect(counts[NegotiationCategory.interview], 1);
+      expect(counts[NegotiationCategory.invitation], 1);
       expect(counts[NegotiationCategory.pending], 1);
     });
 
