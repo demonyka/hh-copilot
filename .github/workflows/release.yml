@@ -38,24 +38,102 @@ jobs:
             build/macos/Build/Products/Release/hh_copilot.app \
             "$GITHUB_WORKSPACE/hh_copilot-${{ env.RELEASE_TAG }}-macos.zip"
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: hh_copilot-*-macos.zip
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Плагин flutter_inappwebview_windows качает WebView2/WIL/nlohmann через NuGet
+      # на этапе сборки. Гарантируем, что nuget.exe есть в PATH (иначе find_program
+      # не найдёт его → пакеты не скачаются → сборка упадёт на отсутствующих хедерах).
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - run: flutter --version
+      - run: flutter pub get
+
+      # flutter_inappwebview_windows 0.6.0 в CMakeLists.txt использует
+      # add_custom_command(TARGET ... PRE_BUILD ... DEPENDS ${NUGET}). Ключ DEPENDS
+      # недопустим в TARGET-форме и отвергается новыми CMake (policy CMP0175) —
+      # из-за этого падает конфигурация. Удаляем эту строку в копии пакета в
+      # pub-cache: функционально она бесполезна (DEPENDS в TARGET-форме
+      # игнорируется), но новым CMake мешает.
+      - name: Patch flutter_inappwebview_windows CMakeLists (CMP0175)
+        shell: pwsh
+        run: |
+          $root = if ($env:PUB_CACHE) { $env:PUB_CACHE } else { Join-Path $env:LOCALAPPDATA 'Pub\Cache' }
+          Write-Host "PUB_CACHE root: $root"
+          $files = Get-ChildItem -Path $root -Recurse -Filter CMakeLists.txt -ErrorAction SilentlyContinue |
+                   Where-Object { $_.FullName -match 'flutter_inappwebview_windows' }
+          if (-not $files) { Write-Error 'CMakeLists.txt плагина не найден в pub-cache'; exit 1 }
+          $any = $false
+          foreach ($f in $files) {
+            $c = Get-Content -LiteralPath $f.FullName -Raw
+            $patched = $c -replace '(?m)^[ \t]*DEPENDS[ \t]+\$\{NUGET\}[ \t]*\r?\n', ''
+            if ($patched -ne $c) {
+              Set-Content -LiteralPath $f.FullName -Value $patched -NoNewline
+              Write-Host "Patched: $($f.FullName)"
+              $any = $true
+            } else {
+              Write-Host "Nothing to patch: $($f.FullName)"
+            }
+          }
+          if (-not $any) { Write-Host 'ВНИМАНИЕ: строка DEPENDS не найдена (возможно, плагин уже исправлен).' }
+
+      - name: Build Windows
+        shell: pwsh
+        run: |
+          flutter build windows --release
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath "$env:GITHUB_WORKSPACE/hh_copilot-${{ env.RELEASE_TAG }}-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: hh_copilot-*-windows.zip
+          if-no-files-found: error
+
+  release:
+    needs: [macos, windows]
+    # macOS-релиз не должен блокироваться падением Windows-сборки: публикуем,
+    # если macOS-джоба прошла, а Windows-артефакт добавится, когда соберётся.
+    if: ${{ always() && needs.macos.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: List artifacts
+        run: find dist -type f
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: hh·copilot ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
-          fail_on_unmatched_files: true
-          files: hh_copilot-${{ env.RELEASE_TAG }}-macos.zip
+          fail_on_unmatched_files: false
+          files: dist/**/*.zip
           body: |
-            Первый релиз **hh·copilot** — десктоп-приложение для hh.ru: аналитика
-            резюме, чаты, авто-отклики с ИИ (письма/тесты), авто-ответы
-            работодателям, определение собеседований и уведомления в Telegram.
+            Релиз **hh·copilot** — десктоп-приложение для hh.ru: аналитика резюме,
+            чаты, авто-отклики с ИИ (письма/тесты), авто-ответы работодателям,
+            определение собеседований и уведомления в Telegram.
 
-            ### macOS
-            Скачайте `hh_copilot-*-macos.zip` (universal: Intel + Apple Silicon),
-            распакуйте и запустите `hh_copilot.app`. Подпись ad-hoc: при первом
-            запуске правый клик → «Открыть», либо
-            `xattr -dr com.apple.quarantine hh_copilot.app`.
+            ### Скачать
+            - **macOS** — `hh_copilot-*-macos.zip` (universal: Intel + Apple Silicon).
+              Подпись ad-hoc: при первом запуске правый клик → «Открыть», либо
+              `xattr -dr com.apple.quarantine hh_copilot.app`.
+            - **Windows** — `hh_copilot-*-windows.zip` (нужен WebView2 Runtime; на
+              Windows 11 предустановлен).
 
-            Настройка ИИ/Telegram — внутри приложения. Подробнее — в README.
-
-            _Windows-сборка появится позже (собирается на Windows/CI отдельно)._
+            Установка: распакуйте и запустите. Настройка ИИ/Telegram — внутри
+            приложения. Подробнее — в README.
