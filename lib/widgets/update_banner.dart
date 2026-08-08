@@ -15,6 +15,7 @@ class UpdateBanner extends StatelessWidget {
     final info = controller.available;
     if (info == null) return const SizedBox.shrink();
 
+    final installing = controller.installing;
     return Material(
       color: HhColors.red,
       child: SizedBox(
@@ -27,8 +28,11 @@ class UpdateBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Доступна новая версия ${info.version} '
-                  '(у вас ${info.currentVersion})',
+                  installing
+                      ? '${controller.installStage} '
+                          '${(controller.installProgress * 100).round()}%'
+                      : 'Доступна новая версия ${info.version} '
+                          '(у вас ${info.currentVersion})',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -38,29 +42,47 @@ class UpdateBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: () => launchUrl(Uri.parse(info.pageUrl),
-                    mode: LaunchMode.externalApplication),
-                style: TextButton.styleFrom(foregroundColor: Colors.white),
-                child: const Text('Что нового'),
-              ),
-              const SizedBox(width: 4),
-              ElevatedButton(
-                onPressed: () => launchUrl(Uri.parse(info.downloadUrl),
-                    mode: LaunchMode.externalApplication),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: HhColors.red,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  minimumSize: const Size(0, 30),
+              if (installing) ...[
+                SizedBox(
+                  width: 120,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: controller.installProgress > 0
+                          ? controller.installProgress
+                          : null,
+                      minHeight: 6,
+                      backgroundColor: Colors.white24,
+                      valueColor:
+                          const AlwaysStoppedAnimation(Colors.white),
+                    ),
+                  ),
                 ),
-                child: const Text('Обновить'),
-              ),
-              IconButton(
-                tooltip: 'Скрыть',
-                onPressed: controller.dismiss,
-                icon: const Icon(Icons.close, size: 18, color: Colors.white),
-              ),
+                const SizedBox(width: 12),
+              ] else ...[
+                TextButton(
+                  onPressed: () => launchUrl(Uri.parse(info.pageUrl),
+                      mode: LaunchMode.externalApplication),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  child: const Text('Что нового'),
+                ),
+                const SizedBox(width: 4),
+                ElevatedButton(
+                  onPressed: controller.installUpdate,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: HhColors.red,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    minimumSize: const Size(0, 30),
+                  ),
+                  child: Text(controller.canInstall ? 'Обновить' : 'Скачать'),
+                ),
+                IconButton(
+                  tooltip: 'Скрыть',
+                  onPressed: controller.dismiss,
+                  icon: const Icon(Icons.close, size: 18, color: Colors.white),
+                ),
+              ],
             ],
           ),
         ),

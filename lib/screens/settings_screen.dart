@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../state/settings_controller.dart';
 import '../state/update_controller.dart';
@@ -192,19 +191,37 @@ class _UpdatesSection extends StatelessWidget {
                   size: 18, color: HhColors.red),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Доступна версия ${info.version}',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: HhColors.textPrimary)),
+                child: Text(
+                  u.installing
+                      ? '${u.installStage} ${(u.installProgress * 100).round()}%'
+                      : 'Доступна версия ${info.version}',
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: HhColors.textPrimary),
+                ),
               ),
-              ElevatedButton(
-                onPressed: () => launchUrl(Uri.parse(info.downloadUrl),
-                    mode: LaunchMode.externalApplication),
-                child: const Text('Скачать'),
-              ),
+              if (u.installing)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              else
+                ElevatedButton(
+                  onPressed: u.installUpdate,
+                  child: Text(u.canInstall ? 'Обновить' : 'Скачать'),
+                ),
             ],
           ),
+          if (u.canInstall && !u.installing)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Приложение скачает и установит обновление само, затем '
+                'перезапустится.',
+                style: TextStyle(fontSize: 12, color: HhColors.textMuted),
+              ),
+            ),
         ],
       ],
     );

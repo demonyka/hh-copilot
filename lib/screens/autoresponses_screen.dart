@@ -126,6 +126,12 @@ class _BodyState extends State<_Body> {
                       onChanged: (v) =>
                           _update(cfg.copyWith(leaveDiscardChats: v)),
                     ),
+                    BotSwitch(
+                      label: 'Поднимать резюме в выдаче',
+                      value: cfg.raiseResume,
+                      enabled: !anyRunning,
+                      onChanged: (v) => _update(cfg.copyWith(raiseResume: v)),
+                    ),
                     const Divider(height: 20),
                     BotSwitch(
                       label: 'Фоновый цикл — повторять по кругу',

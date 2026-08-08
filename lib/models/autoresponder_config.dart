@@ -46,6 +46,7 @@ class AutoresponderConfig {
     this.applyVacancies = true,
     this.answerChats = false,
     this.leaveDiscardChats = false,
+    this.raiseResume = false,
     this.loopEnabled = false,
     this.loopIntervalMin = 15,
     this.aiBaseUrl = 'http://localhost:11434',
@@ -90,6 +91,9 @@ class AutoresponderConfig {
   /// Выходить из чатов, где пришёл отказ (очистка).
   final bool leaveDiscardChats;
 
+  /// Поднимать резюме в поисковой выдаче, пока работает бот (раз в ~4 ч).
+  final bool raiseResume;
+
   /// Фоновый цикл — повторять по интервалу, пока не остановят.
   final bool loopEnabled;
 
@@ -125,6 +129,7 @@ class AutoresponderConfig {
     bool? applyVacancies,
     bool? answerChats,
     bool? leaveDiscardChats,
+    bool? raiseResume,
     bool? loopEnabled,
     int? loopIntervalMin,
     String? aiBaseUrl,
@@ -147,6 +152,7 @@ class AutoresponderConfig {
       applyVacancies: applyVacancies ?? this.applyVacancies,
       answerChats: answerChats ?? this.answerChats,
       leaveDiscardChats: leaveDiscardChats ?? this.leaveDiscardChats,
+      raiseResume: raiseResume ?? this.raiseResume,
       loopEnabled: loopEnabled ?? this.loopEnabled,
       loopIntervalMin: loopIntervalMin ?? this.loopIntervalMin,
       aiBaseUrl: aiBaseUrl ?? this.aiBaseUrl,
@@ -170,6 +176,7 @@ class AutoresponderConfig {
         'applyVacancies': applyVacancies,
         'answerChats': answerChats,
         'leaveDiscardChats': leaveDiscardChats,
+        'raiseResume': raiseResume,
         'loopEnabled': loopEnabled,
         'loopIntervalMin': loopIntervalMin,
         'aiBaseUrl': aiBaseUrl,
@@ -195,6 +202,7 @@ class AutoresponderConfig {
       answerChats: (j['answerChats'] ?? d.answerChats) as bool,
       leaveDiscardChats:
           (j['leaveDiscardChats'] ?? d.leaveDiscardChats) as bool,
+      raiseResume: (j['raiseResume'] ?? d.raiseResume) as bool,
       loopEnabled: (j['loopEnabled'] ?? d.loopEnabled) as bool,
       loopIntervalMin: (j['loopIntervalMin'] ?? d.loopIntervalMin) as int,
       aiBaseUrl: (j['aiBaseUrl'] ?? d.aiBaseUrl) as String,

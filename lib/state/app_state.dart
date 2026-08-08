@@ -470,6 +470,36 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Поднять резюме в поисковой выдаче hh.ru (порт `TouchResume`).
+  /// multipart-форма с полями resume + undirectable. hh даёт поднятие раз в ~4ч.
+  Future<bool> touchResume(String resumeHash) async {
+    if (resumeHash.isEmpty) return false;
+    final xsrf = await xsrfToken();
+    if (xsrf.isEmpty) return false;
+    final boundary =
+        '----hhcopilot${DateTime.now().microsecondsSinceEpoch}';
+    final body = '--$boundary\r\n'
+        'Content-Disposition: form-data; name="resume"\r\n\r\n$resumeHash\r\n'
+        '--$boundary\r\n'
+        'Content-Disposition: form-data; name="undirectable"\r\n\r\ntrue\r\n'
+        '--$boundary--\r\n';
+    final resp = await hhRequest(
+      method: 'POST',
+      url: '$baseUrl/applicant/resumes/touch',
+      headers: {
+        'Content-Type': 'multipart/form-data; boundary=$boundary',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Hhtmfrom': 'negotiation_list',
+        'X-Hhtmsource': 'resume_list',
+        'X-Xsrftoken': xsrf,
+        'Referer': '$baseUrl/applicant/resumes',
+      },
+      body: body,
+    );
+    return resp != null && resp.ok;
+  }
+
   Future<void> _navigate(String url) async {
     await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
   }

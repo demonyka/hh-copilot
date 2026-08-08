@@ -168,6 +168,8 @@ class AutoresponderController extends ChangeNotifier {
         _vacErrors = 0;
         notifyListeners();
 
+        await _maybeRaise(resume, log);
+
         final engine = Autoresponder(
           appState: _appState,
           ai: ai,
@@ -274,6 +276,8 @@ class AutoresponderController extends ChangeNotifier {
         _replied = 0;
         notifyListeners();
 
+        await _maybeRaise(resume, log);
+
         final chat = ChatResponder(
           appState: _appState,
           ai: ai,
@@ -331,6 +335,25 @@ class AutoresponderController extends ChangeNotifier {
         apiKey: _config.aiApiKey,
         reasoningEffort: _config.aiReasoningEffort,
       );
+
+  // Автоподнятие резюме: hh даёт бесплатное поднятие раз в ~4 часа.
+  DateTime? _lastRaise;
+  Future<void> _maybeRaise(
+      HhResume resume, void Function(String, {bool error}) log) async {
+    if (!_config.raiseResume) return;
+    final now = DateTime.now();
+    if (_lastRaise != null &&
+        now.difference(_lastRaise!) < const Duration(hours: 4)) {
+      return;
+    }
+    final ok = await _appState.touchResume(resume.hash);
+    if (ok) {
+      _lastRaise = now;
+      log('Резюме поднято в выдаче');
+    } else {
+      log('Поднять резюме не удалось (возможно, ещё рано)', error: true);
+    }
+  }
 
   void _appendLog(List<AutoLogEntry> log, String m, bool error) {
     log.insert(0, AutoLogEntry(m, error, DateTime.now()));
